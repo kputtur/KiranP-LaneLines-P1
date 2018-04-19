@@ -15,42 +15,98 @@ To complete the project, two files will be submitted: a file containing project 
 To meet specifications in the project, take a look at the requirements in the [project rubric](https://review.udacity.com/#!/rubrics/322/view)
 
 
-Creating a Great Writeup
----
-For this project, a great writeup should provide a detailed response to the "Reflection" section of the [project rubric](https://review.udacity.com/#!/rubrics/322/view). There are three parts to the reflection:
-
-1. Describe the pipeline
-
-2. Identify any shortcomings
-
-3. Suggest possible improvements
-
-We encourage using images in your writeup to demonstrate how your pipeline works.  
-
-All that said, please be concise!  We're not looking for you to write a book here: just a brief description.
-
-You're not required to use markdown for your writeup.  If you use another method please just submit a pdf of your writeup. Here is a link to a [writeup template file](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md). 
+# Finding Lane Lines on the Road - Kiran Puttur
+----
 
 
-The Project
+#### The goal of this project is to identify lane lines on the road and draw them on the test images and videos. 
+
+
+# Reflection
 ---
 
-## If you have already installed the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) you should be good to go!   If not, you should install the starter kit to get started on this project. ##
+## 1. The Pipeline
 
-**Step 1:** Set up the [CarND Term1 Starter Kit](https://classroom.udacity.com/nanodegrees/nd013/parts/fbf77062-5703-404e-b60c-95b78b2f3f9e/modules/83ec35ee-1e02-48a5-bdb7-d244bd47c2dc/lessons/8c82408b-a217-4d09-b81d-1bda4c6380ef/concepts/4f1870e0-3849-43e4-b670-12e6f2d4b7a7) if you haven't already.
+#### The Pipeline consists of:
+* [Choosing the Color Model - RGB, HSV and HSL]
+* [ Grayscaling and smoothing using Gaussian Blur]
+* [Canny Edge Detection]
+* [Selecting Region of Interest]
+* [Hough Transform]
+* [Embedding Lines on Image]
 
-**Step 2:** Open the code in a Jupyter Notebook
+Last but not least
+* [Extending the draw_lines function]
 
-You will complete the project code in a Jupyter notebook.  If you are unfamiliar with Jupyter Notebooks, check out <A HREF="https://www.packtpub.com/books/content/basics-jupyter-notebook-and-python" target="_blank">Cyrille Rossant's Basics of Jupyter Notebook and Python</A> to get started.
+## Choosing the Proper Color Space
+---
+There are different color models available such as
 
-Jupyter is an Ipython notebook where you can run blocks of code and see results interactively.  All the code for this project is contained in a Jupyter notebook. To start Jupyter in your browser, use terminal to navigate to your project directory and then run the following command at the terminal prompt (be sure you've activated your Python 3 carnd-term1 environment as described in the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) installation instructions!):
+* RGB
+* HSV ( Hue Saturation Value)
+* HSL (Hue Saturation Lightness)
 
-`> jupyter notebook`
+More about HSV and HSL here : https://en.wikipedia.org/wiki/HSL_and_HSV if we use the RGB model then the shadows from objects like trees and clouds will be much more darker, to avoid this we can either use HSL or HSV color models.
 
-A browser window will appear showing the contents of the current directory.  Click on the file called "P1.ipynb".  Another browser window will appear displaying the notebook.  Follow the instructions in the notebook to complete the project.  
+## Grayscaling and Smoothing using Gaussian Blur
 
-**Step 3:** Complete the project and submit both the Ipython notebook and the project writeup
+In this section we will grayscale the after applying the HSL filter and then use Gaussian blur for smoothing the edges before presenting to Canny Edge Detection , kernel size of 9 is used here.
 
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
 
+### Canny Edge Detection
+
+Canny Edge Detection
+Canny Edge detection is an algorithm see here to detect a wide range of edges in images. It was developed by John F. Canny in 1986. 
+Canny also produced a computational theory of edge detection explaining why the technique works. It goes via multistage starting with 
+Noise reduction using Gaussian filter, finding intensity gradient of image with Sobel kernel both in horizontal and vertical direction.
+ In this function we will set high_threshold and low_threshold so narrow done the boundaries for an acceptable edge/value.
+
+
+### Selecting Region of Interest (ROI)
+After **selecting the colors, gray scaling, smoothing, and getting the image's Canny edges** 
+the images still have white spots around the other unimportant parts of the image like trees, sky, clouds etc.
+We need to mask this out and select only the parts which are of interest to us, so to choose region of interest 
+we can make use of the helper function region_of_interest. The method takes two argument image and vertices that 
+make up a polygon, it sets any pixel outside the polygon to black and leaves the pixels within the polygon as it is.
+
+### Hough Transform
+In Hough space, I can represent my "x vs. y" line as a point in "m vs. b" instead. 
+The Hough Transform is just the conversion from image space to Hough space. 
+So, the characterization of a line in image space will be a single point at the position (m, b) in Hough space. 
+Each point in image space corresponds to a sine wave in Hough Space and if some points in image space lay on the 
+same line in Image space this corresponds to an Intersection(Hough Point) of the points sine waves. 
+Provided hough_lines method takes in the parameter threahold that is the minimum number of intersections(votes) in Hough Space to constitute a line in image space. More information here: https://en.wikipedia.org/wiki/Hough_transform
+
+
+### Draw Lines on Image
+
+Draw lines on Image just iterates over the images and embeddes the lane lines drawn using apply_hough_lines on top of the existing
+image.
+
+
+#### Improving the draw_lines function.
+
+To extend the draw_lines method or to extrapolate we need to find out the two lane lines(slope, y-intercept) by dividing our lane lines as left and right using their slopes negative slope indicates left lane and positive means right lane, then we need to average each line slopes and y-intercepts to get a single line for each lane.
+
+once we got the averaged slope and y-intercept for each lane line, then according to forumla y = mx + b, we know m which is slope and b is the y-intercept.
+
+Only thing to left to find out is the x value which can be derived as x = (y - b)/m
+
+This is largely from the discussions here : https://discussions.udacity.com/t/error-using-the-provided-hough-lines-function/213164 and in #slack channel https://discussions.udacity.com/t/error-draw-lines-function/232114/30
+
+
+## 2. Potential shortcomings with the pipeline
+
+Here are so shortcoming that I need to address in the coming weeks as I advance through the course:
+
+1. Identifying curves and extending, improving the draw_lines function to match curves
+2. Ability to improve the process image function for different frame rates/
+3. More robust and dynamic way of identifying the road's horizon
+4. Various scenarios such as white cars crossing in front of us or lane mapping in a jug shaped exit ramps, or lane mapping in entry ramps.
+5. Willt this work under low light or rainy situations where visibility is less.
+
+## 3. Possible improvements could be
+
+1. Improving the readability of the code, constructing a class and neatly tucking methods underneath it.
+2. Ability to improve lane mapping using high speed camera inputs, frames more than 60 fps.
+2. Ability to map curves on the way
